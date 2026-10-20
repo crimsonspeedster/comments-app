@@ -20,6 +20,8 @@ class ReviewResource extends JsonResource
             'email' => $this->email,
             'url' => $this->url,
             'text' => $this->text,
+            'created_at' => $this->created_at,
+            'has_replies' => ($this->replies_count ?? 0) > 0,
         ];
     }
 }

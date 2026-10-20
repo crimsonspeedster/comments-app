@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\IndexReviewRequest;
 use App\Http\Requests\StoreReviewRequest;
 use App\Http\Resources\ReviewResource;
 use App\Models\Review;
@@ -11,6 +12,37 @@ use HTMLPurifier_Config;
 
 class ReviewController extends Controller
 {
+    public function index(IndexReviewRequest $request)
+    {
+        $data = $request->validated();
+
+        $perPage = min((int) ($data['per_page'] ?? 25), 25);
+        $sortBy = $data['sort_by'] ?? 'created_at';
+        $sortDirection = $data['sort_direction'] ?? 'desc';
+
+        $reviews = Review::query()
+            ->whereNull('parent_id')
+            ->withCount('replies')
+            ->orderBy($sortBy, $sortDirection)
+            ->paginate($perPage);
+
+        return ReviewResource::collection($reviews);
+    }
+
+    public function replies(
+        Review $review,
+        IndexReviewRequest $request,
+    ) {
+        $perPage = $request->validated('per_page') ?? 25;
+
+        $replies = $review->replies()
+            ->withCount('replies')
+            ->latest()
+            ->paginate($perPage);
+
+        return ReviewResource::collection($replies);
+    }
+
     public function store(StoreReviewRequest $storeReviewRequest)
     {
         $data = $storeReviewRequest->validated();

@@ -34,6 +34,16 @@ class StoreReviewRequest extends FormRequest
                 'string',
                 'max:10000',
             ],
+            'attachments' => [
+                'sometimes',
+                'array',
+                'max:5',
+            ],
+            'attachments.*' => [
+                'file',
+                'max:102400',
+                'mimes:jpg,jpeg,png,gif,txt',
+            ],
         ];
     }
 }

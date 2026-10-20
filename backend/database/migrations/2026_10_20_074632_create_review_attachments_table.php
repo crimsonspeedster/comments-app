@@ -16,7 +16,9 @@ return new class extends Migration
 
             $table->unsignedBigInteger('review_id');
 
-            $table->string('file_path');
+            $table->string('status')->default('pending');
+            $table->string('original_path')->nullable();
+            $table->string('processed_path')->nullable();
             $table->string('original_name');
             $table->string('mime_type', 100)->nullable();
             $table->unsignedBigInteger('size')->nullable();

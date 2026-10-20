@@ -10,6 +10,7 @@ use App\Models\Review;
 use App\Services\ReviewAttachmentService;
 use HTMLPurifier;
 use HTMLPurifier_Config;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class ReviewController extends Controller
@@ -49,11 +50,13 @@ class ReviewController extends Controller
         );
     }
 
+    /**
+     * @throws Throwable
+     */
     public function store(
         StoreReviewRequest $request,
         ReviewAttachmentService $reviewAttachmentService,
-    )
-    {
+    ) {
         $data = $request->validated();
 
         $config = HTMLPurifier_Config::createDefault();
@@ -64,21 +67,38 @@ class ReviewController extends Controller
 
         $data['text'] = $purifier->purify($data['text']);
 
-        $review = Review::create([
-            'parent_id' => $data['parent_id'] ?? null,
-            'user_name' => $data['user_name'],
-            'email' => $data['email'],
-            'url' => $data['url'] ?? null,
-            'text' => $data['text'],
-        ]);
+        $storedPaths = [];
 
-        foreach ($request->file('attachments', []) as $attachment) {
-            try {
-                $reviewAttachmentService->store($review, $attachment);
-            }
-            catch (Throwable $exception) {
-                return response($exception->getMessage(), 500);
-            }
+        try {
+            $review = DB::transaction(function () use (
+                $data,
+                $request,
+                $reviewAttachmentService,
+                &$storedPaths,
+            ) {
+                $review = Review::create([
+                    'parent_id' => $data['parent_id'] ?? null,
+                    'user_name' => $data['user_name'],
+                    'email' => $data['email'],
+                    'url' => $data['url'] ?? null,
+                    'text' => $data['text'],
+                ]);
+
+                foreach ($request->file('attachments', []) as $file) {
+                    $attachment = $reviewAttachmentService->store(
+                        $review,
+                        $file,
+                    );
+
+                    $storedPaths[] = $attachment->original_path;
+                }
+
+                return $review;
+            });
+        } catch (Throwable $exception) {
+            $reviewAttachmentService->deleteFiles($storedPaths);
+
+            throw $exception;
         }
 
         return response()->json([

@@ -22,6 +22,9 @@ class ReviewResource extends JsonResource
             'text' => $this->text,
             'created_at' => $this->created_at,
             'has_replies' => ($this->replies_count ?? 0) > 0,
+            'attachments' => $this->relationLoaded('attachments') ?
+                ReviewAttachmentResource::collection($this->attachments)
+                : [],
         ];
     }
 }

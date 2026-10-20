@@ -7,8 +7,10 @@ use App\Http\Requests\IndexReviewRequest;
 use App\Http\Requests\StoreReviewRequest;
 use App\Http\Resources\ReviewResource;
 use App\Models\Review;
+use App\Services\ReviewAttachmentService;
 use HTMLPurifier;
 use HTMLPurifier_Config;
+use Throwable;
 
 class ReviewController extends Controller
 {
@@ -26,7 +28,9 @@ class ReviewController extends Controller
             ->orderBy($sortBy, $sortDirection)
             ->paginate($perPage);
 
-        return ReviewResource::collection($reviews);
+        return ReviewResource::collection(
+            $reviews->load('attachments')
+        );
     }
 
     public function replies(
@@ -40,12 +44,17 @@ class ReviewController extends Controller
             ->latest()
             ->paginate($perPage);
 
-        return ReviewResource::collection($replies);
+        return ReviewResource::collection(
+            $replies->load('attachments')
+        );
     }
 
-    public function store(StoreReviewRequest $storeReviewRequest)
+    public function store(
+        StoreReviewRequest $request,
+        ReviewAttachmentService $reviewAttachmentService,
+    )
     {
-        $data = $storeReviewRequest->validated();
+        $data = $request->validated();
 
         $config = HTMLPurifier_Config::createDefault();
         $config->set('HTML.Allowed', 'a[href|title],code,i,strong');
@@ -63,8 +72,19 @@ class ReviewController extends Controller
             'text' => $data['text'],
         ]);
 
+        foreach ($request->file('attachments', []) as $attachment) {
+            try {
+                $reviewAttachmentService->store($review, $attachment);
+            }
+            catch (Throwable $exception) {
+                return response($exception->getMessage(), 500);
+            }
+        }
+
         return response()->json([
-            'data' => new ReviewResource($review),
+            'data' => new ReviewResource(
+                $review->load('attachments'),
+            ),
         ], 201);
     }
 }

@@ -12,10 +12,22 @@ use App\Services\ReviewAttachmentService;
 use HTMLPurifier;
 use HTMLPurifier_Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
+use JsonException;
 
 class ReviewController extends Controller
 {
+    private const int CACHE_TTL = 300;
+
+    private const array INDEX_CACHE_TAGS = [
+        'reviews',
+        'reviews:index',
+    ];
+
+    /**
+     * @throws JsonException
+     */
     public function index(IndexReviewRequest $request)
     {
         $data = $request->validated();
@@ -23,28 +35,70 @@ class ReviewController extends Controller
         $perPage = min((int) ($data['per_page'] ?? 25), 25);
         $sortBy = $data['sort_by'] ?? 'created_at';
         $sortDirection = $data['sort_direction'] ?? 'desc';
+        $page = (int) $request->input('page', 1);
 
-        $reviews = Review::query()
-            ->whereNull('parent_id')
-            ->with(['attachments'])
-            ->withCount('replies')
-            ->orderBy($sortBy, $sortDirection)
-            ->paginate($perPage);
+        $cacheKey = 'reviews:index:' . md5(json_encode([
+            'per_page' => $perPage,
+            'sort_by' => $sortBy,
+            'sort_direction' => $sortDirection,
+            'page' => $page,
+        ], JSON_THROW_ON_ERROR));
+
+        $reviews = Cache::tags(self::INDEX_CACHE_TAGS)
+            ->remember(
+                $cacheKey,
+                self::CACHE_TTL,
+                fn () => Review::query()
+                    ->whereNull('parent_id')
+                    ->with('attachments')
+                    ->withCount('replies')
+                    ->orderBy($sortBy, $sortDirection)
+                    ->paginate(
+                        $perPage,
+                        ['*'],
+                        'page',
+                        $page,
+                    ),
+            );
 
         return ReviewResource::collection($reviews);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function replies(
         Review $review,
         IndexReviewRequest $request,
     ) {
-        $perPage = $request->validated('per_page') ?? 25;
+        $data = $request->validated();
 
-        $replies = $review->replies()
-            ->with(['attachments'])
-            ->withCount('replies')
-            ->latest()
-            ->paginate($perPage);
+        $perPage = min((int) ($data['per_page'] ?? 25), 25);
+        $page = (int) $request->input('page', 1);
+
+        $cacheKey = 'reviews:replies:' . md5(json_encode([
+            'review_id' => $review->id,
+            'per_page' => $perPage,
+            'page' => $page,
+        ], JSON_THROW_ON_ERROR));
+
+        $replies = Cache::tags([
+            'reviews',
+            "reviews:replies:{$review->id}",
+        ])->remember(
+            $cacheKey,
+            self::CACHE_TTL,
+            fn () => $review->replies()
+                ->with('attachments')
+                ->withCount('replies')
+                ->latest()
+                ->paginate(
+                    $perPage,
+                    ['*'],
+                    'page',
+                    $page,
+                ),
+        );
 
         return ReviewResource::collection($replies);
     }

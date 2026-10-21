@@ -3,6 +3,8 @@
 namespace App\Jobs;
 
 use App\Enums\AttachmentStatus;
+use App\Events\AttachmentStatusChanged;
+use App\Events\AttachmentStatusChangedBroadcast;
 use App\Models\ReviewAttachment;
 use App\Services\ReviewAttachmentService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -42,9 +44,10 @@ class ProcessReviewAttachment implements ShouldQueue
             return;
         }
 
-        $attachment->update([
-            'status' => AttachmentStatus::Processing,
-        ]);
+        $service->updateStatus(
+            $attachment,
+            AttachmentStatus::Processing,
+        );
 
         $service->process($attachment);
     }
@@ -60,6 +63,8 @@ class ProcessReviewAttachment implements ShouldQueue
         $attachment->update([
             'status' => AttachmentStatus::Failed,
         ]);
+
+        event(new AttachmentStatusChanged($attachment));
 
         Log::error('Review attachment processing failed permanently.', [
             'attachment_id' => $this->attachmentId,

@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Enums\AttachmentStatus;
+use App\Events\AttachmentStatusChanged;
+use App\Events\AttachmentStatusChangedBroadcast;
 use App\Jobs\ProcessReviewAttachment;
 use App\Models\Review;
 use App\Models\ReviewAttachment;
@@ -46,8 +48,12 @@ class ReviewAttachmentService
             if ($mimeType === 'text/plain') {
                 $attachment->update([
                     'processed_path' => $path,
-                    'status' => AttachmentStatus::Completed,
                 ]);
+
+                $this->updateStatus(
+                    $attachment,
+                    AttachmentStatus::Completed,
+                );
 
                 return $attachment;
             }
@@ -104,9 +110,13 @@ class ReviewAttachmentService
 
             $attachment->update([
                 'processed_path' => $processedPath,
-                'status' => AttachmentStatus::Completed,
                 'size' => Storage::disk('public')->size($processedPath),
             ]);
+
+            $this->updateStatus(
+                $attachment,
+                AttachmentStatus::Completed,
+            );
 
             $disk->delete($attachment->original_path);
         } catch (Throwable $exception) {
@@ -137,5 +147,16 @@ class ReviewAttachmentService
                 ]);
             }
         }
+    }
+
+    public function updateStatus(
+        ReviewAttachment $attachment,
+        AttachmentStatus $status,
+    ): void {
+        $attachment->update([
+            'status' => $status,
+        ]);
+
+        event(new AttachmentStatusChanged($attachment->fresh()));
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AttachmentStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReviewAttachment extends Model
 {
@@ -20,4 +21,9 @@ class ReviewAttachment extends Model
     protected $casts = [
         'status' => AttachmentStatus::class,
     ];
+
+    public function review(): BelongsTo
+    {
+        return $this->belongsTo(Review::class);
+    }
 }

@@ -27,11 +27,6 @@ const commentSchema = z.object({
         .string()
         .trim()
         .min(1, 'Comment text is required'),
-
-    captcha: z
-        .string()
-        .min(1, 'CAPTCHA is required')
-        .regex(/^[a-zA-Z0-9]+$/, 'Use Latin letters and numbers only'),
 });
 
 export interface CommentFormValues {
@@ -39,7 +34,6 @@ export interface CommentFormValues {
     email: string;
     homePage?: string;
     text: string;
-    captcha: string;
 }
 
 interface CommentFormProps {
@@ -62,7 +56,6 @@ export default function CommentForm(
 ) {
     const [files, setFiles] = useState<File[]>([]);
     const [showPreview, setShowPreview] = useState(false);
-    const [captchaCode] = useState('A7K9');
 
     const {
         register,
@@ -77,7 +70,6 @@ export default function CommentForm(
             email: '',
             homePage: '',
             text: '',
-            captcha: '',
         },
     });
 
@@ -102,17 +94,27 @@ export default function CommentForm(
             return;
         }
 
-        setFiles((current) => [
-            ...current,
-            ...Array.from(selectedFiles),
-        ]);
+        const allowedTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'text/plain',
+        ];
+
+        const selected = Array.from(selectedFiles);
+
+        const validFiles = selected.filter((file) =>
+            allowedTypes.includes(file.type),
+        );
+
+        setFiles((current) => {
+            const combined = [...current, ...validFiles];
+
+            return combined.slice(0, 5);
+        });
     }
 
     function submit(values: CommentFormValues) {
-        if (values.captcha.toUpperCase() !== captchaCode) {
-            return;
-        }
-
         onSubmit(values, files);
     }
 
@@ -121,7 +123,7 @@ export default function CommentForm(
             onSubmit={handleSubmit(submit)}
             className="space-y-5"
         >
-            {parentId !== null && (
+            {parentId && (
                 <div className="rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
                     You are replying to comment #{parentId}.
                 </div>
@@ -304,40 +306,6 @@ export default function CommentForm(
                         ))}
                     </ul>
                 )}
-            </div>
-
-            <div>
-                <label className={labelClass} htmlFor="captcha">
-                    Security check <span className="text-red-500">*</span>
-                </label>
-
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                    <div
-                        className="select-none rounded-lg border border-slate-200 bg-slate-50 px-5 py-3 font-mono text-lg font-bold tracking-[0.3em] text-slate-700"
-                        aria-label="Demo CAPTCHA code"
-                    >
-                        {captchaCode}
-                    </div>
-
-                    <div className="min-w-40 flex-1">
-                        <input
-                            id="captcha"
-                            {...register('captcha')}
-                            placeholder="Enter code"
-                            className={inputClass}
-                        />
-                    </div>
-                </div>
-
-                {errors.captcha && (
-                    <p className="mt-1 text-xs text-red-600">
-                        {errors.captcha.message}
-                    </p>
-                )}
-
-                <p className="mt-1.5 text-xs text-slate-400">
-                    Demo CAPTCHA for the UI prototype.
-                </p>
             </div>
 
             <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">

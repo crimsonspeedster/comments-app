@@ -1,5 +1,6 @@
 export interface ReviewAttachment {
-    id: string;
+    id: number;
+    review_id: number;
     status: 'pending' | 'processing' | 'completed' | 'failed';
     url: string | null;
     original_name: string;
@@ -18,6 +19,14 @@ export interface Review {
     has_replies: boolean;
     attachments: ReviewAttachment[];
 }
+
+export type AttachmentStatusChangedEvent = {
+    data: ReviewAttachment;
+    review: {
+        id: number;
+        parent_id: number | null;
+    };
+};
 
 export type CommentSortField = 'user_name' | 'email' | 'created_at';
 

@@ -1,5 +1,8 @@
 import type { Review } from '@models/comments';
 import { Button } from '@ui/Button';
+import { useState } from 'react';
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
 
 interface CommentItemProps {
     review: Review;
@@ -14,6 +17,20 @@ function formatDate(date: string): string {
 }
 
 export function CommentItem({ review, onReply }: CommentItemProps) {
+    const [lightboxIndex, setLightboxIndex] = useState<number>(-1);
+
+    const imageAttachments = review.attachments.filter(
+        (attachment) =>
+            attachment.status === 'completed' &&
+            attachment.mime_type.startsWith('image/') &&
+            attachment.url,
+    );
+
+    const slides = imageAttachments.map((attachment) => ({
+        src: attachment.url!,
+        alt: attachment.original_name,
+    }));
+
     return (
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -58,56 +75,68 @@ export function CommentItem({ review, onReply }: CommentItemProps) {
 
             {review.attachments.length > 0 && (
                 <div className="mt-4 flex flex-wrap items-end gap-3">
-                    {review.attachments.map((attachment) => (
-                        <div
-                            key={attachment.id}
-                            className="max-w-full rounded-lg border border-slate-200 p-3"
-                        >
-                            {attachment.status === 'processing' ||
-                            attachment.status === 'pending' ? (
-                                <p className="text-sm text-slate-500">
-                                    Processing: {attachment.original_name}
-                                </p>
-                            ) : attachment.status === 'failed' ? (
-                                <p className="text-sm text-red-600">
-                                    Failed: {attachment.original_name}
-                                </p>
-                            ) : attachment.mime_type.startsWith('image/') &&
-                            attachment.url ? (
-                                <a
-                                    href={attachment.url}
-                                    target="_blank"
-                                    rel="noopener noindex noreferrer"
-                                    className="block"
-                                >
-                                    <img
-                                        src={attachment.url}
-                                        alt={attachment.original_name}
-                                        className="max-h-60 max-w-full rounded-md object-contain"
-                                    />
+                    {review.attachments.map((attachment) => {
+                        const imageIndex = imageAttachments.findIndex(
+                            (item) => item.id === attachment.id,
+                        );
 
-                                    <span className="mt-2 block text-sm text-slate-600">
+                        return (
+                            <div
+                                key={attachment.id}
+                                className="max-w-full rounded-lg border border-slate-200 p-3"
+                            >
+                                {attachment.status === 'processing' ||
+                                attachment.status === 'pending' ? (
+                                    <p className="text-sm text-slate-500">
+                                        Processing: {attachment.original_name}
+                                    </p>
+                                ) : attachment.status === 'failed' ? (
+                                    <p className="text-sm text-red-600">
+                                        Failed: {attachment.original_name}
+                                    </p>
+                                ) : attachment.mime_type.startsWith('image/') &&
+                                attachment.url ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setLightboxIndex(imageIndex)}
+                                        className="block cursor-zoom-in text-left"
+                                    >
+                                        <img
+                                            src={attachment.url}
+                                            alt={attachment.original_name}
+                                            className="max-h-60 max-w-full rounded-md object-contain"
+                                        />
+
+                                        <span className="mt-2 block text-sm text-slate-600">
+                                {attachment.original_name}
+                            </span>
+                                    </button>
+                                ) : attachment.url ? (
+                                    <a
+                                        href={attachment.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-indigo-600 hover:underline"
+                                    >
                                         {attachment.original_name}
-                                    </span>
-                                </a>
-                            ) : attachment.url ? (
-                                <a
-                                    href={attachment.url}
-                                    target="_blank"
-                                    rel="noopener noindex noreferrer"
-                                    className="text-sm text-indigo-600 hover:underline"
-                                >
-                                    {attachment.original_name}
-                                </a>
-                            ) : (
-                                <p className="text-sm text-slate-600">
-                                    {attachment.original_name}
-                                </p>
-                            )}
-                        </div>
-                    ))}
+                                    </a>
+                                ) : (
+                                    <p className="text-sm text-slate-600">
+                                        {attachment.original_name}
+                                    </p>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
+
+            <Lightbox
+                open={lightboxIndex >= 0}
+                close={() => setLightboxIndex(-1)}
+                index={lightboxIndex}
+                slides={slides}
+            />
 
             <div className="mt-4 flex justify-end">
                 <Button

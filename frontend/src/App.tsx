@@ -1,4 +1,5 @@
-import {useMemo, useState} from 'react';
+import {useState} from 'react';
+import {PAGE_SIZE} from "@/config/env.ts";
 
 import type {
     Review,
@@ -6,7 +7,6 @@ import type {
     SortDirection,
 } from '@models/comments';
 
-import {comments as initialComments} from '@data/comments';
 import {CommentsTable} from '@components/comments/CommentsTable';
 import {Header} from '@layout/Header';
 import {Footer} from '@layout/Footer';
@@ -14,51 +14,46 @@ import Hero from '@layout/Hero';
 import {Pagination} from '@layout/Pagination';
 import CommentForm, {type CommentFormValues} from '@components/comments/CommentForm';
 import Modal from '@ui/Modal';
-
-const PAGE_SIZE = 25;
+import {useQuery} from "@tanstack/react-query";
+import {getReviews} from '@/api/reviews';
+import {useCreateReview} from "@hooks/useCreateReview.ts";
+import {useReviewEvents} from "@hooks/useReviewEvents.ts";
 
 export default function App() {
-    const [reviews, setReviews] = useState<Review[]>(initialComments);
+    useReviewEvents();
 
+    const [currentPage, setCurrentPage] = useState(1);
     const [sortField, setSortField] =
         useState<CommentSortField>('created_at');
-
     const [sortDirection, setSortDirection] =
         useState<SortDirection>('desc');
 
-    const [currentPage, setCurrentPage] = useState(1);
+    const {
+        data: reviewsResponse,
+        isPending,
+        isError,
+    } = useQuery({
+        queryKey: [
+            'reviews',
+            currentPage,
+            PAGE_SIZE,
+            sortField,
+            sortDirection,
+        ],
+        queryFn: () =>
+            getReviews(
+                currentPage,
+                PAGE_SIZE,
+                sortField,
+                sortDirection,
+            ),
+    });
+
+    const reviews = reviewsResponse?.data ?? [];
+    const totalPages = reviewsResponse?.meta.last_page ?? 1;
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [replyTo, setReplyTo] = useState<Review | null>(null);
-
-    const rootReviews = useMemo(() => {
-        return reviews
-            .filter((review) => review.parent_id === null)
-            .sort((a, b) => {
-                const aValue = a[sortField];
-                const bValue = b[sortField];
-
-                const comparison =
-                    sortField === 'created_at'
-                        ? new Date(aValue).getTime() -
-                        new Date(bValue).getTime()
-                        : String(aValue).localeCompare(String(bValue));
-
-                return sortDirection === 'asc'
-                    ? comparison
-                    : -comparison;
-            });
-    }, [reviews, sortField, sortDirection]);
-
-    const totalPages = Math.max(
-        1,
-        Math.ceil(rootReviews.length / PAGE_SIZE),
-    );
-
-    const paginatedReviews = rootReviews.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE,
-    );
 
     function handleSort(field: CommentSortField) {
         if (field === sortField) {
@@ -67,7 +62,9 @@ export default function App() {
             );
         } else {
             setSortField(field);
-            setSortDirection(field === 'created_at' ? 'desc' : 'asc');
+            setSortDirection(
+                field === 'created_at' ? 'desc' : 'asc',
+            );
         }
 
         setCurrentPage(1);
@@ -88,41 +85,32 @@ export default function App() {
         setReplyTo(null);
     }
 
-    function handleCreateReview(
+    const createReviewMutation = useCreateReview();
+
+    async function handleCreateReview(
         values: CommentFormValues,
         files: File[],
-    ) {
-        const newReview: Review = {
-            id: Math.max(0, ...reviews.map((review) => review.id)) + 1,
-            parent_id: replyTo?.id ?? null,
-            user_name: values.userName,
-            email: values.email,
-            url: values.homePage || null,
-            text: values.text,
-            created_at: new Date().toISOString(),
-            has_replies: false,
-            attachments: [],
-        };
+    ): Promise<void> {
+        try {
+            await createReviewMutation.mutateAsync({
+                parent_id: replyTo?.id ?? null,
+                user_name: values.userName,
+                email: values.email,
+                url: values.homePage || null,
+                text: values.text,
+                attachments: files,
+            });
 
-        setReviews((currentReviews) => {
-            const updated = currentReviews.map((review) =>
-                replyTo && review.id === replyTo.id
-                    ? { ...review, has_replies: true }
-                    : review,
-            );
+            setCurrentPage(1);
+            setSortField('created_at');
+            setSortDirection('desc');
 
-            return [newReview, ...updated];
-        });
+            closeForm();
+        } catch (error) {
+            console.error('Failed to create comment:', error);
 
-        // Пока файлы используются только на уровне формы.
-        // Их отправку подключим при интеграции с API.
-        console.log('Selected files:', files);
-
-        setCurrentPage(1);
-        setSortField('created_at');
-        setSortDirection('desc');
-
-        closeForm();
+            throw error;
+        }
     }
 
     return (
@@ -134,14 +122,25 @@ export default function App() {
                     onAddComment={openCreateForm}
                 />
 
-                <CommentsTable
-                    reviews={paginatedReviews}
-                    allReviews={reviews}
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                    onSort={handleSort}
-                    onReply={openReplyForm}
-                />
+                {isPending ? (
+                    <div className="py-12 text-center text-sm text-slate-500">
+                        Loading comments...
+                    </div>
+                ) : isError ? (
+                    <div
+                        role="alert"
+                        className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                    >
+                        Failed to load replies.
+                    </div>
+                ) : <CommentsTable
+                        reviews={reviews}
+                        sortField={sortField}
+                        sortDirection={sortDirection}
+                        onSort={handleSort}
+                        onReply={openReplyForm}
+                    />
+                }
 
                 <Pagination
                     currentPage={currentPage}
@@ -158,6 +157,7 @@ export default function App() {
                 title={replyTo ? 'Reply to comment' : 'Add comment'}
             >
                 <CommentForm
+                    parentId={replyTo?.id}
                     onSubmit={handleCreateReview}
                     onCancel={closeForm}
                 />

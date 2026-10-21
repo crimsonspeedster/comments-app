@@ -17,6 +17,7 @@ class ReviewAttachmentResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'review_id' => $this->review_id,
             'status' => $this->status,
             'url' => $this->status === AttachmentStatus::Completed && $this->processed_path
                 ? Storage::disk('public')->url($this->processed_path)

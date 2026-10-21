@@ -8,7 +8,6 @@ import {CommentThread} from '@components/comments/CommentThread';
 
 interface CommentsTableProps {
     reviews: Review[];
-    allReviews: Review[];
     sortField: CommentSortField;
     sortDirection: SortDirection;
     onSort: (field: CommentSortField) => void;
@@ -54,7 +53,6 @@ function SortButton(
 export function CommentsTable(
     {
         reviews,
-        allReviews,
         sortField,
         sortDirection,
         onSort,
@@ -102,7 +100,6 @@ export function CommentsTable(
                     <CommentThread
                         key={review.id}
                         review={review}
-                        reviews={allReviews}
                         onReply={onReply}
                     />
                 ))

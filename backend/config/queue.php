@@ -35,6 +35,12 @@ return [
             'driver' => 'sync',
         ],
 
+        'rabbitmq' => [
+            'driver' => 'rabbitmq',
+            'connection' => 'default',
+            'queue' => 'default',
+        ],
+
         'database' => [
             'driver' => 'database',
             'connection' => env('DB_QUEUE_CONNECTION'),

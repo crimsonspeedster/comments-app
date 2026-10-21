@@ -1,122 +1,167 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import {useMemo, useState} from 'react';
 
-function App() {
-  const [count, setCount] = useState(0)
+import type {
+    Review,
+    CommentSortField,
+    SortDirection,
+} from '@models/comments';
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+import {comments as initialComments} from '@data/comments';
+import {CommentsTable} from '@components/comments/CommentsTable';
+import {Header} from '@layout/Header';
+import {Footer} from '@layout/Footer';
+import Hero from '@layout/Hero';
+import {Pagination} from '@layout/Pagination';
+import CommentForm, {type CommentFormValues} from '@components/comments/CommentForm';
+import Modal from '@ui/Modal';
+
+const PAGE_SIZE = 25;
+
+export default function App() {
+    const [reviews, setReviews] = useState<Review[]>(initialComments);
+
+    const [sortField, setSortField] =
+        useState<CommentSortField>('created_at');
+
+    const [sortDirection, setSortDirection] =
+        useState<SortDirection>('desc');
+
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [replyTo, setReplyTo] = useState<Review | null>(null);
+
+    const rootReviews = useMemo(() => {
+        return reviews
+            .filter((review) => review.parent_id === null)
+            .sort((a, b) => {
+                const aValue = a[sortField];
+                const bValue = b[sortField];
+
+                const comparison =
+                    sortField === 'created_at'
+                        ? new Date(aValue).getTime() -
+                        new Date(bValue).getTime()
+                        : String(aValue).localeCompare(String(bValue));
+
+                return sortDirection === 'asc'
+                    ? comparison
+                    : -comparison;
+            });
+    }, [reviews, sortField, sortDirection]);
+
+    const totalPages = Math.max(
+        1,
+        Math.ceil(rootReviews.length / PAGE_SIZE),
+    );
+
+    const paginatedReviews = rootReviews.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE,
+    );
+
+    function handleSort(field: CommentSortField) {
+        if (field === sortField) {
+            setSortDirection((direction) =>
+                direction === 'asc' ? 'desc' : 'asc',
+            );
+        } else {
+            setSortField(field);
+            setSortDirection(field === 'created_at' ? 'desc' : 'asc');
+        }
+
+        setCurrentPage(1);
+    }
+
+    function openCreateForm() {
+        setReplyTo(null);
+        setIsFormOpen(true);
+    }
+
+    function openReplyForm(review: Review) {
+        setReplyTo(review);
+        setIsFormOpen(true);
+    }
+
+    function closeForm() {
+        setIsFormOpen(false);
+        setReplyTo(null);
+    }
+
+    function handleCreateReview(
+        values: CommentFormValues,
+        files: File[],
+    ) {
+        const newReview: Review = {
+            id: Math.max(0, ...reviews.map((review) => review.id)) + 1,
+            parent_id: replyTo?.id ?? null,
+            user_name: values.userName,
+            email: values.email,
+            url: values.homePage || null,
+            text: values.text,
+            created_at: new Date().toISOString(),
+            has_replies: false,
+            attachments: [],
+        };
+
+        setReviews((currentReviews) => {
+            const updated = currentReviews.map((review) =>
+                replyTo && review.id === replyTo.id
+                    ? { ...review, has_replies: true }
+                    : review,
+            );
+
+            return [newReview, ...updated];
+        });
+
+        // Пока файлы используются только на уровне формы.
+        // Их отправку подключим при интеграции с API.
+        console.log('Selected files:', files);
+
+        setCurrentPage(1);
+        setSortField('created_at');
+        setSortDirection('desc');
+
+        closeForm();
+    }
+
+    return (
+        <div className="min-h-screen">
+            <Header onAddComment={openCreateForm}/>
+
+            <main className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+                <Hero
+                    onAddComment={openCreateForm}
+                />
+
+                <CommentsTable
+                    reviews={paginatedReviews}
+                    allReviews={reviews}
+                    sortField={sortField}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                    onReply={openReplyForm}
+                />
+
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                />
+            </main>
+
+            <Footer />
+
+            <Modal
+                open={isFormOpen}
+                onClose={closeForm}
+                title={replyTo ? 'Reply to comment' : 'Add comment'}
+            >
+                <CommentForm
+                    onSubmit={handleCreateReview}
+                    onCancel={closeForm}
+                />
+            </Modal>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    );
 }
-
-export default App

@@ -1,0 +1,429 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API for project",
+        "description": "API documentation for project",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://localhost:8000/",
+            "description": "Api server"
+        }
+    ],
+    "paths": {
+        "/api/v1/reviews": {
+            "get": {
+                "tags": [
+                    "reviews"
+                ],
+                "summary": "Get reviews",
+                "description": "Get root reviews with attachments and pagination.",
+                "operationId": "407c1f4a811ef9d21fd825e40a1bad51",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Pagination page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of reviews per page (max 25)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 25,
+                            "maximum": 25,
+                            "minimum": 1
+                        },
+                        "example": 25
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "description": "Field used to sort reviews",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "created_at",
+                            "enum": [
+                                "user_name",
+                                "email",
+                                "created_at"
+                            ]
+                        },
+                        "example": "created_at"
+                    },
+                    {
+                        "name": "sort_direction",
+                        "in": "query",
+                        "description": "Sorting direction",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "desc",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        },
+                        "example": "desc"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reviews retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReviewPaginationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": []
+            },
+            "post": {
+                "tags": [
+                    "reviews"
+                ],
+                "summary": "Create review",
+                "description": "Create a review with optional file attachments.",
+                "operationId": "130203f77a3564dbff3c3c5a1c84c009",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "user_name",
+                                    "email",
+                                    "text"
+                                ],
+                                "properties": {
+                                    "parent_id": {
+                                        "description": "ID of the parent review.",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true,
+                                        "minimum": 1
+                                    },
+                                    "user_name": {
+                                        "description": "Author name. Only Latin letters and digits are allowed.",
+                                        "type": "string",
+                                        "pattern": "^[a-zA-Z0-9]+$",
+                                        "example": "John123",
+                                        "maxLength": 255
+                                    },
+                                    "email": {
+                                        "description": "Author email address.",
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@mail.com",
+                                        "maxLength": 255
+                                    },
+                                    "url": {
+                                        "description": "Author website URL.",
+                                        "type": "string",
+                                        "format": "uri",
+                                        "example": "https://example.com",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    },
+                                    "text": {
+                                        "description": "Review text.",
+                                        "type": "string",
+                                        "example": "This is my review.",
+                                        "maxLength": 10000
+                                    },
+                                    "attachments": {
+                                        "description": "Optional array of up to 5 files. Allowed formats: JPG, JPEG, PNG, GIF, TXT. Maximum size per file: 100 MB.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        },
+                                        "maxItems": 5
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Review created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReviewItem"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/api/v1/reviews/{review}": {
+            "get": {
+                "tags": [
+                    "reviews"
+                ],
+                "summary": "Get review replies",
+                "description": "Get paginated replies for a specific review, including their attachments and reply counts.",
+                "operationId": "f58606aaeef5752edf573141d43739f2",
+                "parameters": [
+                    {
+                        "name": "review",
+                        "in": "path",
+                        "description": "ID of the parent review",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Pagination page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of replies per page (max 25)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 25,
+                            "maximum": 25,
+                            "minimum": 1
+                        },
+                        "example": 25
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Replies retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReviewPaginationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Review not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": []
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "PaginationLinksResponse": {
+                "properties": {
+                    "first": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
+                    },
+                    "last": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
+                    },
+                    "prev": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
+                    },
+                    "next": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PaginationMetaResponse": {
+                "properties": {
+                    "current_page": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "from": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "last_page": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "path": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://localhost:8000/api/v1/reviews"
+                    },
+                    "per_page": {
+                        "type": "integer",
+                        "example": 25
+                    },
+                    "to": {
+                        "type": "integer",
+                        "example": 25,
+                        "nullable": true
+                    },
+                    "total": {
+                        "type": "integer",
+                        "example": 125
+                    }
+                },
+                "type": "object"
+            },
+            "ReviewAttachmentItem": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "completed",
+                        "enum": [
+                            "pending",
+                            "processing",
+                            "completed",
+                            "failed"
+                        ]
+                    },
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://localhost:8000/storage/reviews/image.jpg",
+                        "nullable": true
+                    },
+                    "original_name": {
+                        "type": "string",
+                        "example": "image.jpg"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "example": "image/jpeg"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "example": 102400
+                    }
+                },
+                "type": "object"
+            },
+            "ReviewItem": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "parent_id": {
+                        "type": "integer",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "user_name": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "john@example.com"
+                    },
+                    "url": {
+                        "type": "string",
+                        "example": "https://example.com",
+                        "nullable": true
+                    },
+                    "text": {
+                        "type": "string",
+                        "example": "This is a review."
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-10-20T12:30:00.000000Z"
+                    },
+                    "has_replies": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "attachments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ReviewAttachmentItem"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ReviewPaginationResponse": {
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ReviewItem"
+                        }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/PaginationLinksResponse"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PaginationMetaResponse"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "reviews",
+            "description": "reviews"
+        }
+    ]
+}

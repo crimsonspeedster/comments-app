@@ -25,13 +25,12 @@ class ReviewController extends Controller
 
         $reviews = Review::query()
             ->whereNull('parent_id')
+            ->with(['attachments'])
             ->withCount('replies')
             ->orderBy($sortBy, $sortDirection)
             ->paginate($perPage);
 
-        return ReviewResource::collection(
-            $reviews->load('attachments')
-        );
+        return ReviewResource::collection($reviews);
     }
 
     public function replies(
@@ -41,13 +40,12 @@ class ReviewController extends Controller
         $perPage = $request->validated('per_page') ?? 25;
 
         $replies = $review->replies()
+            ->with(['attachments'])
             ->withCount('replies')
             ->latest()
             ->paginate($perPage);
 
-        return ReviewResource::collection(
-            $replies->load('attachments')
-        );
+        return ReviewResource::collection($replies);
     }
 
     /**
@@ -103,7 +101,7 @@ class ReviewController extends Controller
 
         return response()->json([
             'data' => new ReviewResource(
-                $review->load('attachments'),
+                $review->load('attachments')->loadCount('replies'),
             ),
         ], 201);
     }

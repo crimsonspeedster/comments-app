@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
@@ -10,9 +9,6 @@
       ],
       "@layout/*": [
         "./src/components/layout/*"
-      ],
-      "@data/*": [
-        "./src/data/*"
       ],
       "@models/*": [
         "./src/types/*"

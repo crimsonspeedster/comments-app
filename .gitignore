@@ -1,0 +1,16 @@
+# Env
+.env
+
+# Override compose
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

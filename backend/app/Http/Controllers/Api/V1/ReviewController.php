@@ -8,6 +8,7 @@ use App\Http\Requests\IndexReviewRequest;
 use App\Http\Requests\StoreReviewRequest;
 use App\Http\Resources\ReviewResource;
 use App\Models\Review;
+use App\Services\RecaptchaService;
 use App\Services\ReviewAttachmentService;
 use HTMLPurifier;
 use HTMLPurifier_Config;
@@ -109,8 +110,15 @@ class ReviewController extends Controller
     public function store(
         StoreReviewRequest $request,
         ReviewAttachmentService $reviewAttachmentService,
+        RecaptchaService $recaptchaService,
     ) {
         $data = $request->validated();
+
+        if (!$recaptchaService->verify($data['recaptcha_token'])) {
+            return response()->json([
+                'message' => 'reCAPTCHA verification failed.',
+            ], 422);
+        }
 
         $config = HTMLPurifier_Config::createDefault();
         $config->set('HTML.Allowed', 'a[href|title],code,i,strong');

@@ -44,6 +44,10 @@ class StoreReviewRequest extends FormRequest
                 'max:102400',
                 'mimes:jpg,jpeg,png,gif,txt',
             ],
+            'recaptcha_token' => [
+                'required',
+                'string',
+            ],
         ];
     }
 }

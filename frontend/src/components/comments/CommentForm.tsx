@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {useForm} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
+import { getRecaptchaToken } from '@/lib/recaptcha';
 
 import {Button} from "@ui/Button.tsx";
 
@@ -39,7 +40,7 @@ export interface CommentFormValues {
 interface CommentFormProps {
     parentId?: number | null;
     onCancel: () => void;
-    onSubmit: (values: CommentFormValues, files: File[]) => void;
+    onSubmit: (values: CommentFormValues, files: File[], recaptchaToken: string) => void;
 }
 
 const inputClass =
@@ -114,8 +115,10 @@ export default function CommentForm(
         });
     }
 
-    function submit(values: CommentFormValues) {
-        onSubmit(values, files);
+    async function submit(values: CommentFormValues) {
+        const recaptchaToken = await getRecaptchaToken('create_comment');
+
+        await onSubmit(values, files, recaptchaToken);
     }
 
     return (

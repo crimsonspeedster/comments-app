@@ -90,6 +90,7 @@ export default function App() {
     async function handleCreateReview(
         values: CommentFormValues,
         files: File[],
+        recaptchaToken: string,
     ): Promise<void> {
         try {
             await createReviewMutation.mutateAsync({
@@ -99,6 +100,7 @@ export default function App() {
                 url: values.homePage || null,
                 text: values.text,
                 attachments: files,
+                recaptchaToken,
             });
 
             setCurrentPage(1);

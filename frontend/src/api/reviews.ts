@@ -15,6 +15,7 @@ export interface CreateReviewPayload {
     url: string | null;
     text: string;
     attachments: File[];
+    recaptchaToken: string;
 }
 
 interface PaginatedResponse<T> {
@@ -51,6 +52,7 @@ export async function createReview(
     formData.append('email', payload.email);
     formData.append('url', payload.url ?? '');
     formData.append('text', payload.text);
+    formData.append('recaptcha_token', payload.recaptchaToken);
 
     payload.attachments.forEach((file) => {
         formData.append('attachments[]', file);

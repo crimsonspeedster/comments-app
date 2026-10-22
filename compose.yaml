@@ -23,6 +23,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
     env_file:
       - ./backend/.env
     environment:
@@ -36,8 +37,8 @@ services:
       REDIS_PORT: 6379
       ELASTICSEARCH_HOST: http://elasticsearch:9200
     depends_on:
-      mysql:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_started
       elasticsearch:
@@ -77,6 +78,30 @@ services:
     networks:
       - comments
 
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
+      DB_USERNAME: ${MYSQL_USER:?MYSQL_USER is required}
+      DB_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+    command: php artisan migrate --force
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - comments
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -112,6 +137,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
     env_file:
       - ./backend/.env
     environment:
@@ -130,8 +156,8 @@ services:
       --tries=${QUEUE_TRIES:-3}
       --timeout=${QUEUE_TIMEOUT:-90}
     depends_on:
-      mysql:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_started
       elasticsearch:
@@ -162,6 +188,7 @@ volumes:
   mysql_data:
   redis_data:
   elasticsearch_data:
+  backend_vendor:
 
 networks:
   comments:

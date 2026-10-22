@@ -40,8 +40,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      elasticsearch:
-        condition: service_healthy
+#      elasticsearch:
+#        condition: service_healthy
     networks:
       - comments
 
@@ -86,22 +86,22 @@ services:
     networks:
       - comments
 
-  elasticsearch:
-    image: ${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch:9.0.0}
-    restart: unless-stopped
-    environment:
-      discovery.type: single-node
-      xpack.security.enabled: "false"
-      ES_JAVA_OPTS: ${ELASTICSEARCH_JAVA_OPTS}
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health >/dev/null || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-    networks:
-      - comments
+#  elasticsearch:
+#    image: ${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch:9.0.0}
+#    restart: unless-stopped
+#    environment:
+#      discovery.type: single-node
+#      xpack.security.enabled: "false"
+#      ES_JAVA_OPTS: ${ELASTICSEARCH_JAVA_OPTS}
+#    volumes:
+#      - elasticsearch_data:/usr/share/elasticsearch/data
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health >/dev/null || exit 1"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 30
+#    networks:
+#      - comments
 
   queue:
     build:
@@ -134,8 +134,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      elasticsearch:
-        condition: service_healthy
+#      elasticsearch:
+#        condition: service_healthy
     networks:
       - comments
 
@@ -161,7 +161,7 @@ services:
 volumes:
   mysql_data:
   redis_data:
-  elasticsearch_data:
+#  elasticsearch_data:
 
 networks:
   comments:

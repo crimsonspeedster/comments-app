@@ -27,7 +27,7 @@ COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE review_attachments (
 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 review_id BIGINT UNSIGNED NOT NULL,
-status VARCHAR(255) NOT NULL DEFAULT ‘pending’,
+status VARCHAR(255) NOT NULL DEFAULT 'pending',
 original_path VARCHAR(255) NULL,
 processed_path VARCHAR(255) NULL,
 original_name VARCHAR(255) NOT NULL,

@@ -39,7 +39,7 @@ RUN composer install \
 COPY . .
 
 RUN composer dump-autoload --optimize \
-    && mkdir -p storage/framework/cache \
+    && mkdir -p storage/framework/cache/htmlpurifier \
                 storage/framework/sessions \
                 storage/framework/views \
                 storage/logs \

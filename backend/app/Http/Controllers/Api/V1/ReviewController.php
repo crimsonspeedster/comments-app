@@ -116,6 +116,11 @@ class ReviewController extends Controller
         $config->set('HTML.Allowed', 'a[href|title],code,i,strong');
         $config->set('HTML.Doctype', 'XHTML 1.0 Strict');
 
+        $config->set(
+            'Cache.SerializerPath',
+            storage_path('framework/cache/htmlpurifier')
+        );
+
         $purifier = new HTMLPurifier($config);
 
         $data['text'] = $purifier->purify($data['text']);

@@ -37,3 +37,14 @@
         cursor: not-allowed;
     }
 }
+
+.inner-link {
+    a {
+        color: blue;
+        text-decoration: underline;
+
+        &:hover {
+            text-decoration: none;
+        }
+    }
+}

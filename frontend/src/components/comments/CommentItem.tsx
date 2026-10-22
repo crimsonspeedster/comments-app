@@ -70,7 +70,7 @@ export function CommentItem({ review, onReply }: CommentItemProps) {
             </div>
 
             <div
-                className="mt-4 whitespace-pre-wrap wrap-break-word text-slate-700"
+                className="mt-4 whitespace-pre-wrap wrap-break-word inner-link text-slate-700"
                 dangerouslySetInnerHTML={{__html: review.text}}
             />
 

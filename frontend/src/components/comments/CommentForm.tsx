@@ -235,9 +235,9 @@ export default function CommentForm(
                     </>
                 ) : (
                     <div
-                        className="mt-2 min-h-40 whitespace-pre-wrap break-words rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-                        {text || 'Nothing to preview yet.'}
-                    </div>
+                        className="mt-2 min-h-40 whitespace-pre-wrap break-words inner-link rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700"
+                        dangerouslySetInnerHTML={{ __html: text || 'Nothing to preview yet.' }}
+                    />
                 )}
 
                 {errors.text && (

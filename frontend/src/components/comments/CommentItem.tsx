@@ -69,9 +69,10 @@ export function CommentItem({ review, onReply }: CommentItemProps) {
                 </time>
             </div>
 
-            <div className="mt-4 whitespace-pre-wrap wrap-break-word text-slate-700">
-                {review.text}
-            </div>
+            <div
+                className="mt-4 whitespace-pre-wrap wrap-break-word text-slate-700"
+                dangerouslySetInnerHTML={{__html: review.text}}
+            />
 
             {review.attachments.length > 0 && (
                 <div className="mt-4 flex flex-wrap items-end gap-3">
